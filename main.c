@@ -1,12 +1,38 @@
 #include<stdio.h>
 #include<stdlib.h>
+typedef struct{
+	char estadoOrigem[2];
+	char estadoDestino[2];
+	int  distancia;
+	char cidadeOrigem[30];
+	char cidadeDestino[30];
+	char tempoViagem[10];
+} Route;
+
+typedef struct{
+	int status;
+	int numero_vertices;
+	int numero_arestas;
+	char data_ultima_compactacao[10];
+} Header;
 
 
-main(int argc, char *argv[]){
-	
-	switch(argv[0][0]){
+int read_csv(char* csv_name, char* bin_name){
+	FILE *csv_file = fopen(csv_name,"r");
+	FILE *bin_file = fopen(bin_name,"w");
+	if(csv_file == NULL || bin_file == NULL)
+		return -1;
+	char route[30];
+	printf("%s",route);
+	return 0;
+}
+
+
+
+int main(int argc, char *argv[]){
+	switch(argv[1][0]){
 		case '1':		// LEITURA DE DADOS
-
+			read_csv(argv[2],argv[3]);
 
 		break;
 		case '2':		// RECUPERAÇÃO DE TODOS OS REGISTROS
