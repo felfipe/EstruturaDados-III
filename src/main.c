@@ -434,26 +434,36 @@ int remove_register(char *file_name){
 }
 
 
-int main(int argc, char *argv[]){
-	switch(argv[1][0]){
+int main(){
+	int funcao;
+	char fileNameCSV[20];
+	char fileNameBin[20];
+	char compacted_file_name[40];
+
+	scanf("%d", &funcao);
+
+	switch(funcao){
 		case '1':		// LEITURA DE DADOS
-			read_csv(argv[2],argv[3]);
+			scanf("%s %s", fileNameCSV,fileNameBin);
+			read_csv(fileNameCSV,fileNameBin);
 
 		break;
 		case '2':		// RECUPERAÇÃO DE TODOS OS REGISTROS
-			recover_data(open_file(argv[2],"rb"));
+			scanf("%s", fileNameBin);
+			recover_data(open_file(fileNameBin,"rb"));
 
 		break;
 		case '3':		// RECUPERAÇÃO POR BUSCA
-			recover_search(open_file(argv[2],"rb"));
+			scanf("%s", fileNameBin);
+			recover_search(open_file(fileNameBin,"rb"));
 
 		break;
 		case '4':		// RECUPERAÇÃO DE REGISTROS POR RRN
-			recover_rrn(open_file(argv[2],"rb"));
+			recover_rrn(open_file(fileNameBin,"rb"));
 
 		break;
 		case '5':		// REMOÇÃO DE REGISTROS
-			remove_register(argv[2]);
+			remove_register(fileNameBin);
 
 		break;
 		case '6':		// INSERÇÃO DE REGISTROS ADICIONAIS
@@ -464,8 +474,8 @@ int main(int argc, char *argv[]){
 
 		break;
 		case '8':		// COMPACTAÇÃO DO ARQUIVO
-			compact_file(argv[2],argv[3]);
-
+			scanf("%s", compacted_file_name);
+			compact_file(fileNameBin,compacted_file_name);
 		break;
 
 
