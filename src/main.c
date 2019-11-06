@@ -433,6 +433,63 @@ int remove_register(char *file_name){
 	
 }
 
+void insert_regs(char* fileName, int n){
+	int i;
+	int flag;
+	char aux[40];
+	Route* route;
+	FILE* file = open_file(fileName, "rb");
+	fseek(file,19,SEEK_SET);
+	while(1){
+		if(fread(route, 85, 1, file)==0)
+			break;
+	}
+	
+	for(i=0; i<n || flag!=0; i++){
+		clear_route(route);
+		scanf(" %s", aux);
+		if(!strcmp(aux, "NULO")){
+			limpa_string(route->estadoOrigem,3);
+		}else{
+			strcpy(route->estadoOrigem, aux);
+		}
+		scanf(" %s", aux);
+		if(!strcmp(aux, "NULO")){
+			limpa_string(route->estadoDestino,3);
+		}else{
+			strcpy(route->estadoDestino, aux);
+		}
+		scanf(" %s", aux);
+		if(!strcmp(aux, "NULO")){
+			route->distancia=0;
+		}else{
+			route->distancia = atoi(aux);
+		}
+		scanf(" %s", aux);
+		if(!strcmp(aux, "NULO")){
+			limpa_string(route->cidadeOrigem,40);
+		}else{
+			strcpy(route->cidadeOrigem, aux);
+		}
+		scanf(" %s", aux);
+		if(!strcmp(aux, "NULO")){
+			limpa_string(route->cidadeDestino,40);
+		}else{
+			strcpy(route->cidadeDestino, aux);
+		}
+		scanf(" %s", aux);
+		if(!strcmp(aux, "NULO")){
+			limpa_string(route->tempoViagem,10);
+		}else{
+			strcpy(route->tempoViagem, aux);
+		}
+		flag = write_register(file, *route);
+	}
+	if(fseek(file, 19, SEEK_SET))
+		printf("Falha no processamento do arquivo.");
+	recover_data(file);
+}
+
 
 int main(){
 	int funcao;
