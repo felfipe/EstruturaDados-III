@@ -117,9 +117,10 @@ int read_csv(char* csv_name, char* bin_name){
     FILE *csv_file = fopen(csv_name,"rb+");
     FILE *bin_file = fopen(bin_name,"wb");
     FILE *head_file = fopen("head.bin","wb+");
-    if(csv_file == NULL || bin_file == NULL || head_file == NULL)
-		printf("Falha no carregamento do arquivo.");
+    if(csv_file == NULL || bin_file == NULL || head_file == NULL){
+        printf("Falha no carregamento do arquivo.");
         return -1;
+    }
     Route route;
     Header head;
     limpa_header(&head);
@@ -222,7 +223,11 @@ void recover_data(FILE* file){
 	}
 }
 */
-void recover_data(FILE* file){
+int recover_data(FILE* file){
+    if(file == NULL){
+        printf("Falha no processamento do arquivo.");
+        return -1;
+    }
     int i = 0;
     Route route;
     clear_route(&route);
@@ -234,6 +239,7 @@ void recover_data(FILE* file){
         i++;
     }
     close_file(file);
+    return 0;
 }
 int dictionary_field(char *field_name){
     char dictionary[6][15] = {"estadoOrigem","estadoDestino","distancia","cidadeOrigem","cidadeDestino","tempoViagem"};
@@ -509,7 +515,7 @@ int main(){
         case '1':		// LEITURA DE DADOS
             scanf("%s %s", fileNameCSV,fileNameBin);
             if(read_csv(fileNameCSV,fileNameBin) != -1)
-            	binarioNaTela1(fileNameBin);
+                binarioNaTela1(fileNameBin);
 
             break;
         case '2':		// RECUPERAÇÃO DE TODOS OS REGISTROS
