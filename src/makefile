@@ -1,4 +1,4 @@
 all:
-	gcc main.c funcoes_uteis.c -o programaTrab1
+	gcc main.c funcoes_uteis.c -o prog
 run:
-	./programaTrab1
+	./prog

@@ -492,12 +492,12 @@ void insert_regs(char* fileName, int n){
 
 
 int main(){
-	int funcao;
+    char funcao;
 	char fileNameCSV[20];
 	char fileNameBin[20];
 	char compacted_file_name[40];
 
-	scanf("%d", &funcao);
+	scanf("%c", &funcao);
 
 	switch(funcao){
 		case '1':		// LEITURA DE DADOS
@@ -537,8 +537,5 @@ int main(){
 
 
 	}
-
-
-
 	return 0;
 }
