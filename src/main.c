@@ -118,6 +118,7 @@ int read_csv(char* csv_name, char* bin_name){
     FILE *bin_file = fopen(bin_name,"wb");
     FILE *head_file = fopen("head.bin","wb+");
     if(csv_file == NULL || bin_file == NULL || head_file == NULL)
+		printf("Falha no carregamento do arquivo.");
         return -1;
     Route route;
     Header head;
@@ -323,12 +324,12 @@ void recover_rrn(FILE* file){
     Route route;
     clear_route(&route);
     int rrn;
-    scanf(" %d", &rrn);
+    scanf("%d", &rrn);
     if(read_bin_rnn(file,rrn,&route)!=-1){
         printf("%d %s %s %d %s %s %s \n",rrn,route.estadoOrigem,route.estadoDestino,route.distancia,route.cidadeOrigem,
                route.cidadeDestino,route.tempoViagem);
     }else{
-        printf("Registro inexistente");
+        printf("Registro inexistente.");
     }
     fclose(file);
 }
@@ -507,8 +508,8 @@ int main(){
     switch(funcao){
         case '1':		// LEITURA DE DADOS
             scanf("%s %s", fileNameCSV,fileNameBin);
-            read_csv(fileNameCSV,fileNameBin);
-            binarioNaTela1(fileNameBin);
+            if(read_csv(fileNameCSV,fileNameBin) != -1)
+            	binarioNaTela1(fileNameBin);
 
             break;
         case '2':		// RECUPERAÇÃO DE TODOS OS REGISTROS
@@ -522,6 +523,7 @@ int main(){
 
             break;
         case '4':		// RECUPERAÇÃO DE REGISTROS POR RRN
+            scanf("%s", fileNameBin);
             recover_rrn(open_file(fileNameBin,"rb"));
 
             break;
