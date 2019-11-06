@@ -113,7 +113,6 @@ int read_csv(char* csv_name, char* bin_name){
 	FILE *head_file = fopen("head.bin","w+");
 	if(csv_file == NULL || bin_file == NULL || head_file == NULL)
 		return -1;
-	char leitura[100];
 	Route route;
 	Header head;
 	head.numero_vertices = 0; // CLEAR HEADER
@@ -219,7 +218,6 @@ void recover_data(FILE* file){
 */
 void recover_data(FILE* file){
 	int i = 0;
-	int num_registros;
 	Route route;
 	clear_route(&route);
 	while(read_bin_rnn(file,i,&route) != -1){
@@ -354,6 +352,7 @@ int compact_file(char *file_name, char* compacted_file_name){
 	}
 	fclose(file);
 	fclose(compacted_file);
+	return 0;
 }
 int remove_rrn(FILE *file, int rrn){
 	fseek(file,19,SEEK_SET);
@@ -430,14 +429,14 @@ int remove_register(char *file_name){
 		if(!flag)
 			printf("Registro inexistente.");
 	}
-	
+	return 0;
 }
 
 void insert_regs(char* fileName, int n){
 	int i;
 	int flag;
 	char aux[40];
-	Route* route;
+	Route* route = (Route*)malloc (sizeof(Route));
 	FILE* file = open_file(fileName, "rb");
 	fseek(file,19,SEEK_SET);
 	while(1){
@@ -496,6 +495,7 @@ int main(){
 	char fileNameCSV[20];
 	char fileNameBin[20];
 	char compacted_file_name[40];
+	int n;
 
 	scanf("%c", &funcao);
 
@@ -524,7 +524,8 @@ int main(){
 
 		break;
 		case '6':		// INSERÇÃO DE REGISTROS ADICIONAIS
-
+			scanf(" %s, %d", fileNameBin, &n);
+			insert_regs(fileNameBin, n);
 
 		break;
 		case '7':		// ATUALIZAÇÃO DE REGISTRO POR RRN
