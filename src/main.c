@@ -484,9 +484,9 @@ void insert_regs(char* fileName, int n){
 		}
 		flag = write_register(file, *route);
 	}
-	if(fseek(file, 19, SEEK_SET))
+	if(fseek(file, 0, SEEK_SET))
 		printf("Falha no processamento do arquivo.");
-	recover_data(file);
+	binarioNaTela1(fileName);
 }
 
 
