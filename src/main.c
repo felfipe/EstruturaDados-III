@@ -55,7 +55,7 @@ void clear_route(Route *route){
     limpa_string(route->tempoViagem,10);
     route->distancia = 0;
 }
-int limpa_header(Header *head){
+void limpa_header(Header *head){
     limpa_string(head->data_ultima_compactacao,11);
     head->numero_arestas = 0;
     head->numero_vertices = 0;
@@ -205,39 +205,31 @@ int read_bin_rnn(FILE* file, int rnn, Route *route){
     read_variable_string(file,route->tempoViagem);
     return 1;
 }
-/*
-void recover_data(FILE* file){
-	int i = 0;
-	int num_registros;
-	Route route;
 
-	fseek(file,2*sizeof(int)+sizeof(char),SEEK_SET);
-	fread(&num_registros,sizeof(int),1,file);
-	fseek(file,0,SEEK_CUR);
-
-
-	for(i=0;i<num_registros;i++){
-		read_bin_rnn(file,i,&route);
-		printf("%d %s %s %d %s %s %s",i,route.estadoOrigem,route.estadoDestino,route.distancia,route.cidadeOrigem,
-		route.cidadeDestino,route.tempoViagem);
-	}
-}
-*/
 int recover_data(FILE* file){
     if(file == NULL){
         printf("Falha no processamento do arquivo.");
         return -1;
     }
+
+    if(fgetc(file) == '0'){
+        printf("Falha no processamento do arquivo.");
+        return -1;
+    }
     int i = 0;
+    int cont = 0;
     Route route;
     clear_route(&route);
     while(read_bin_rnn(file,i,&route) != -1){
         if(route.estadoOrigem[0] != '*'){
             printf("%d %s %s %d %s %s %s \n",i,route.estadoOrigem,route.estadoDestino,route.distancia,route.cidadeOrigem,
                    route.cidadeDestino,route.tempoViagem);
+            cont++;
         }
         i++;
     }
+    if(cont == 0)
+        printf("Registro inexistente.");
     close_file(file);
     return 0;
 }
@@ -376,15 +368,16 @@ int remove_rrn(FILE *file, int rrn){
     return 0;
 }
 int remove_register(char *file_name){
-    FILE* file = open_file(file_name,"r+");
-    if(file == NULL)
+    FILE* file = open_file(file_name,"rb+");
+    if(file == NULL){
+        printf("Falha no processamento do arquivo.");
         return -1;
-
+    }
     int num_reg;
     int distance;
     scanf("%d",&num_reg);
     for(int i =0; i< num_reg; i++){
-        fflush(stdin);
+        //fflush(stdin);
         int j = 0;
         int flag = 0;
         char field_name[15];
@@ -438,8 +431,10 @@ int remove_register(char *file_name){
             }
             j++;
         }
-        if(!flag)
+        if(!flag) {
             printf("Registro inexistente.");
+            return -1;
+        }
     }
     return 0;
 }
@@ -534,7 +529,9 @@ int main(){
 
             break;
         case '5':		// REMOÇÃO DE REGISTROS
-            remove_register(fileNameBin);
+            scanf("%s", fileNameBin);
+            if(remove_register(fileNameBin) != -1)
+                binarioNaTela1(fileNameBin);
 
             break;
         case '6':		// INSERÇÃO DE REGISTROS ADICIONAIS
