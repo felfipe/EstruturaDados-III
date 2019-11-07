@@ -497,86 +497,86 @@ void insert_regs(char* fileName, int n){
     close_file(file);
 }
 
-void atualiza_campo_rrn(char *fileName, int n){
-	FILE *file = open_file(fileName, "rb");
-	int i, tipo, read;
-	int rrn;
-	char tipoCampo[15];
-	char novoCampo[40];
-	Route reg;
-	clear_route(&reg);
+int atualiza_campo_rrn(char *fileName, int n){
+    FILE *file = open_file(fileName, "rb+");
+    int i, tipo, read;
+    int rrn;
+    char tipoCampo[15];
+    char novoCampo[40];
+    Route reg;
+    clear_route(&reg);
 
-	for(i=0; i<n; i++){
-		scanf ("%d %s", &rrn, tipoCampo);
-		scan_quote_string(novoCampo);
-		fseek(file,19,SEEK_SET);
-		fseek(file,rrn*TAM_REGISTRO,SEEK_CUR);
+    for(i=0; i<n; i++){
+        scanf ("%d %s", &rrn, tipoCampo);
+        scan_quote_string(novoCampo);
+        fseek(file,19,SEEK_SET);
+        fseek(file,rrn*TAM_REGISTRO,SEEK_CUR);
 
-		tipo = dictionary_field(tipoCampo);
-		if((read=read_bin_rnn(file, rrn, &reg))==(-1)){
-			printf("Falha no processamento do arquivo.");
-			return;
-		}
-		switch (tipo)
-		{
-		case 1:
-			if(!strcmp(novoCampo, "NULO")){
-				strcpy(reg.estadoOrigem, novoCampo);
-			}else{
-				limpa_string(reg.estadoOrigem,3);
-			}
-			break;
+        tipo = dictionary_field(tipoCampo);
+        if(read_bin_rnn(file, rrn, &reg) == -1){
+            printf("Falha no processamento do arquivo.");
+            return -1;
+        }
+        switch (tipo)
+        {
+            case 1:
+                if(!strcmp(novoCampo, "NULO")){
+                    strcpy(reg.estadoOrigem, novoCampo);
+                }else{
+                    limpa_string(reg.estadoOrigem,3);
+                }
+                break;
 
-		case 2:
-			if(!strcmp(novoCampo, "NULO")){
-				strcpy(reg.estadoDestino, novoCampo);
-			}else{
-				limpa_string(reg.estadoDestino,3);
-			}
-			break;
+            case 2:
+                if(!strcmp(novoCampo, "NULO")){
+                    strcpy(reg.estadoDestino, novoCampo);
+                }else{
+                    limpa_string(reg.estadoDestino,3);
+                }
+                break;
 
-		case 3:
-			if(!strcmp(novoCampo, "NULO")){
-				reg.distancia=atoi(novoCampo);
-			}else{
-				reg.distancia=0;
-			}
-			break;
+            case 3:
+                if(!strcmp(novoCampo, "NULO")){
+                    reg.distancia=atoi(novoCampo);
+                }else{
+                    reg.distancia=0;
+                }
+                break;
 
-		case 4:
-			if (!strcmp(novoCampo, "NULO")){
-				strcpy(reg.cidadeOrigem, novoCampo);
-			}else{
-				limpa_string(reg.cidadeOrigem,40);
-			}
-			break;
+            case 4:
+                if (!strcmp(novoCampo, "NULO")){
+                    strcpy(reg.cidadeOrigem, novoCampo);
+                }else{
+                    limpa_string(reg.cidadeOrigem,40);
+                }
+                break;
 
-		case 5:
-			if (!strcmp(novoCampo, "NULO")){
-				strcpy(reg.cidadeDestino, novoCampo);
-			}else{
-				limpa_string(reg.cidadeDestino,40);
-			}
-			break;
+            case 5:
+                if (!strcmp(novoCampo, "NULO")){
+                    strcpy(reg.cidadeDestino, novoCampo);
+                }else{
+                    limpa_string(reg.cidadeDestino,40);
+                }
+                break;
 
-		case 6:
-			if (!strcmp(novoCampo, "NULO")){
-				strcpy(reg.tempoViagem, novoCampo);
-			}else{
-				limpa_string(reg.tempoViagem, 10);
-			}
-			break;
+            case 6:
+                if (!strcmp(novoCampo, "NULO")){
+                    strcpy(reg.tempoViagem, novoCampo);
+                }else{
+                    limpa_string(reg.tempoViagem, 10);
+                }
+                break;
 
-		default:
-			printf("Falha no processamento do arquivo.");
-			break;
-		}
-		fseek(file,19,SEEK_SET);
-		fseek(file,rrn*TAM_REGISTRO,SEEK_CUR);
-		write_register(file, reg, 0);
-	}
+            default:
+                printf("Falha no processamento do arquivo.");
+                break;
+        }
+        fseek(file,19,SEEK_SET);
+        fseek(file,rrn*TAM_REGISTRO,SEEK_CUR);
+        write_register(file, reg, 0);
+    }
+    close_file(file);
 }
-
 
 int main(){
     char funcao;
