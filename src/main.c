@@ -69,20 +69,22 @@ int write_header(Header head, FILE *file){
     fwrite(head.data_ultima_compactacao,10*sizeof(char),1,file);
     return 0;
 }
-int write_register(FILE* file, Route reg){
-    fwrite(reg.estadoOrigem,TAM_ESTADO*sizeof(char),1,file);
-    fwrite(reg.estadoDestino,TAM_ESTADO*sizeof(char),1,file);
-    fwrite(&(reg.distancia),sizeof(int),1,file);
-    fwrite(reg.cidadeOrigem,strlen(reg.cidadeOrigem)*sizeof(char),1,file);
-    fwrite("|",sizeof(char),1,file);
-    fwrite(reg.cidadeDestino,strlen(reg.cidadeDestino)*sizeof(char),1,file);
-    fwrite("|",sizeof(char),1,file);
-    fwrite(reg.tempoViagem,strlen(reg.tempoViagem)*sizeof(char),1,file);
-    fwrite("|",sizeof(char),1,file);
-    int size = TAM_REGISTRO - 2*TAM_ESTADO - sizeof(int) - strlen(reg.cidadeOrigem) - strlen(reg.cidadeDestino) - strlen(reg.tempoViagem) - 3;
-    for(int i = 0; i < size; i++)
-        fwrite("#",sizeof(char),1,file);
-    return 0;
+int write_register(FILE* file, Route reg, int j){
+	fwrite(reg.estadoOrigem,TAM_ESTADO*sizeof(char),1,file);
+	fwrite(reg.estadoDestino,TAM_ESTADO*sizeof(char),1,file);
+	fwrite(&(reg.distancia),sizeof(int),1,file);
+	fwrite(reg.cidadeOrigem,strlen(reg.cidadeOrigem)*sizeof(char),1,file);
+	fwrite("|",sizeof(char),1,file);
+	fwrite(reg.cidadeDestino,strlen(reg.cidadeDestino)*sizeof(char),1,file);
+	fwrite("|",sizeof(char),1,file);
+	fwrite(reg.tempoViagem,strlen(reg.tempoViagem)*sizeof(char),1,file);
+	fwrite("|",sizeof(char),1,file);
+	int size = TAM_REGISTRO - 2*TAM_ESTADO - sizeof(int) - strlen(reg.cidadeOrigem) - strlen(reg.cidadeDestino) - strlen(reg.tempoViagem) - 3;
+	if (j){
+		for(int i = 0; i < size; i++)
+			fwrite("#",sizeof(char),1,file);
+	}
+	return 0;
 }
 int query_city_file(FILE* cities, char *city){
     char query[40];
@@ -161,7 +163,7 @@ int read_csv(char* csv_name, char* bin_name){
             route.tempoViagem[i] = a;
             a = fgetc(csv_file);
         }
-        write_register(bin_file,route);
+        write_register(bin_file,route,1);
         head.numero_arestas++;
         if(query_city_file(head_file,route.cidadeOrigem))
             head.numero_vertices++;
@@ -350,7 +352,7 @@ int compact_file(char *file_name, char* compacted_file_name){
     write_header(head,compacted_file);
     while(read_bin_rnn(file,rrn,&route) != -1){
         if(route.estadoOrigem[0] != '*'){
-            write_register(compacted_file,route);
+            write_register(compacted_file,route,1);
         }
         rrn++;
     }
@@ -489,11 +491,90 @@ void insert_regs(char* fileName, int n){
         }else{
             strcpy(route->tempoViagem, aux);
         }
-        flag = write_register(file, *route);
+        flag = write_register(file, *route,1);
     }
     if(fseek(file, 0, SEEK_SET))
         printf("Falha no processamento do arquivo.");
     binarioNaTela1(fileName);
+}
+void atualiza_campo_rrn(char *fileName, int n){
+	FILE *file = open_file(fileName, "rb");
+	int i, tipo, read;
+	int rrn;
+	char tipoCampo[15];
+	char novoCampo[40];
+	Route reg;
+	clear_route(&reg);
+
+	for(i=0; i<n; i++){
+		scanf ("%d %s", &rrn, tipoCampo);
+		scan_quote_string(novoCampo);
+		fseek(file,19,SEEK_SET);
+		fseek(file,rrn*TAM_REGISTRO,SEEK_CUR);
+
+		tipo = dictionary_field(tipoCampo);
+		if((read=read_bin_rnn(file, rrn, &reg))==(-1)){
+			printf("Falha no processamento do arquivo.");
+			return;
+		}
+		switch (tipo)
+		{
+		case 1:
+			if(!strcmp(novoCampo, "NULO")){
+				strcpy(reg.estadoOrigem, novoCampo);
+			}else{
+				limpa_string(reg.estadoOrigem,3);
+			}
+			break;
+
+		case 2:
+			if(!strcmp(novoCampo, "NULO")){
+				strcpy(reg.estadoDestino, novoCampo);
+			}else{
+				limpa_string(reg.estadoDestino,3);
+			}
+			break;
+
+		case 3:
+			if(!strcmp(novoCampo, "NULO")){
+				reg.distancia=atoi(novoCampo);
+			}else{
+				reg.distancia=0;
+			}
+			break;
+
+		case 4:
+			if (!strcmp(novoCampo, "NULO")){
+				strcpy(reg.cidadeOrigem, novoCampo);
+			}else{
+				limpa_string(reg.cidadeOrigem,40);
+			}
+			break;
+
+		case 5:
+			if (!strcmp(novoCampo, "NULO")){
+				strcpy(reg.cidadeDestino, novoCampo);
+			}else{
+				limpa_string(reg.cidadeDestino,40);
+			}
+			break;
+
+		case 6:
+			if (!strcmp(novoCampo, "NULO")){
+				strcpy(reg.tempoViagem, novoCampo);
+			}else{
+				limpa_string(reg.tempoViagem, 10);
+			}
+			break;
+
+		default:
+			printf("Falha no processamento do arquivo.");
+			break;
+		}
+		fseek(file,19,SEEK_SET);
+		fseek(file,rrn*TAM_REGISTRO,SEEK_CUR);
+		write_register(file, reg, 0);
+	}
 }
 
 
@@ -540,8 +621,10 @@ int main(){
 
             break;
         case '7':		// ATUALIZAÇÃO DE REGISTRO POR RRN
-
+            scanf("%s, %d", fileNameBin, &n);
+			atualiza_campo_rrn(fileNameBin, n);
             break;
+            
         case '8':		// COMPACTAÇÃO DO ARQUIVO
             scanf("%s", compacted_file_name);
             compact_file(fileNameBin,compacted_file_name);
