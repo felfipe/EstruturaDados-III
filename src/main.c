@@ -442,61 +442,61 @@ int remove_register(char *file_name){
 }
 
 void insert_regs(char* fileName, int n){
-    int i;
-    int flag;
+    int i=0;
     char aux[40];
-    Route* route = (Route*)malloc (sizeof(Route));
-    FILE* file = open_file(fileName, "rb");
+    Route route;
+    FILE* file = open_file(fileName, "rb+");
+
     fseek(file,19,SEEK_SET);
-    while(1){
-        if(fread(route, 85, 1, file)==0)
-            break;
+
+    while(getc(file) != EOF){
+        fseek(file,TAM_REGISTRO-1,SEEK_CUR);
+        i++;
     }
 
-    for(i=0; i<n || flag!=0; i++){
-        clear_route(route);
-        scanf(" %s", aux);
+    for(i=0; i<n; i++){
+        clear_route(&route);
+        scan_quote_string(aux);
         if(!strcmp(aux, "NULO")){
-            limpa_string(route->estadoOrigem,3);
+            limpa_string(route.estadoOrigem,3);
         }else{
-            strcpy(route->estadoOrigem, aux);
+            strcpy(route.estadoOrigem, aux);
         }
-        scanf(" %s", aux);
+        scan_quote_string(aux);
         if(!strcmp(aux, "NULO")){
-            limpa_string(route->estadoDestino,3);
+            limpa_string(route.estadoDestino,3);
         }else{
-            strcpy(route->estadoDestino, aux);
+            strcpy(route.estadoDestino, aux);
         }
-        scanf(" %s", aux);
+        scan_quote_string(aux);
         if(!strcmp(aux, "NULO")){
-            route->distancia=0;
+            route.distancia=0;
         }else{
-            route->distancia = atoi(aux);
+            route.distancia = atoi(aux);
         }
-        scanf(" %s", aux);
+        scan_quote_string(aux);
         if(!strcmp(aux, "NULO")){
-            limpa_string(route->cidadeOrigem,40);
+            limpa_string(route.cidadeOrigem,40);
         }else{
-            strcpy(route->cidadeOrigem, aux);
+            strcpy(route.cidadeOrigem, aux);
         }
-        scanf(" %s", aux);
+        scan_quote_string(aux);
         if(!strcmp(aux, "NULO")){
-            limpa_string(route->cidadeDestino,40);
+            limpa_string(route.cidadeDestino,40);
         }else{
-            strcpy(route->cidadeDestino, aux);
+            strcpy(route.cidadeDestino, aux);
         }
-        scanf(" %s", aux);
+        scan_quote_string(aux);
         if(!strcmp(aux, "NULO")){
-            limpa_string(route->tempoViagem,10);
+            limpa_string(route.tempoViagem,10);
         }else{
-            strcpy(route->tempoViagem, aux);
+            strcpy(route.tempoViagem, aux);
         }
-        flag = write_register(file, *route,1);
+        write_register(file, route,1);
     }
-    if(fseek(file, 0, SEEK_SET))
-        printf("Falha no processamento do arquivo.");
-    binarioNaTela1(fileName);
+    close_file(file);
 }
+
 void atualiza_campo_rrn(char *fileName, int n){
 	FILE *file = open_file(fileName, "rb");
 	int i, tipo, read;
@@ -616,15 +616,18 @@ int main(){
 
             break;
         case '6':		// INSERÇÃO DE REGISTROS ADICIONAIS
-            scanf(" %s, %d", fileNameBin, &n);
+            scanf("%s %d", fileNameBin, &n);
+            //binarioNaTela1(fileNameBin);
             insert_regs(fileNameBin, n);
+            binarioNaTela1(fileNameBin);
+            break;
 
-            break;
         case '7':		// ATUALIZAÇÃO DE REGISTRO POR RRN
-            scanf("%s, %d", fileNameBin, &n);
-			atualiza_campo_rrn(fileNameBin, n);
+            scanf("%s %d", fileNameBin, &n);
+            atualiza_campo_rrn(fileNameBin, n);
+            binarioNaTela1(fileNameBin);
             break;
-            
+
         case '8':		// COMPACTAÇÃO DO ARQUIVO
             scanf("%s", compacted_file_name);
             compact_file(fileNameBin,compacted_file_name);
