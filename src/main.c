@@ -69,6 +69,49 @@ int write_header(Header head, FILE *file){
     fwrite(head.data_ultima_compactacao,10*sizeof(char),1,file);
     return 0;
 }
+
+void read_variable_string(FILE *file_bin,char *string_var){
+    int i = 0;
+    while(1){
+        string_var[i] = fgetc(file_bin);
+        if(string_var[i] == '|')
+            break;
+        i++;
+    }
+    string_var[i] = '\0';
+}
+
+int read_bin_rnn(FILE* file, int rnn, Route *route){
+    clear_route(route);
+    fseek(file,19,SEEK_SET);
+    fseek(file,rnn*TAM_REGISTRO,SEEK_CUR);
+    if(fgetc(file) == EOF)
+        return -1;
+    fseek(file,-1,SEEK_CUR);
+    fread(route->estadoOrigem,2*sizeof(char),1,file);
+    //printf("%s\n",route->estadoOrigem);
+    fread(route->estadoDestino,2*sizeof(char),1,file);
+    //printf("%s\n",route->estadoDestino);
+    fread(&(route->distancia),sizeof(int),1,file);
+    //printf("%d\n",route-> distancia);
+    read_variable_string(file,route->cidadeOrigem);
+    //printf("aaaaa");
+    read_variable_string(file,route->cidadeDestino);
+    read_variable_string(file,route->tempoViagem);
+    if(route->estadoOrigem[0] == '*')
+        return 2;
+    return 1;
+}
+
+int make_header(Header *head, FILE *file){
+    Route route;
+    int j = 0;
+    while(read_bin_rnn(file,j,&route) != -1){
+
+    }
+    return 1;
+}
+
 int write_register(FILE* file, Route reg, int j){
 	fwrite(reg.estadoOrigem,TAM_ESTADO*sizeof(char),1,file);
 	fwrite(reg.estadoDestino,TAM_ESTADO*sizeof(char),1,file);
@@ -164,48 +207,14 @@ int read_csv(char* csv_name, char* bin_name){
             a = fgetc(csv_file);
         }
         write_register(bin_file,route,1);
-        head.numero_arestas++;
-        if(query_city_file(head_file,route.cidadeOrigem))
-            head.numero_vertices++;
-        if(query_city_file(head_file,route.cidadeDestino))
-            head.numero_vertices++;
     }
     head.status = '1';
+    make_header(&head,bin_file);
     write_header(head,bin_file);
     fclose(bin_file);
     fclose(csv_file);
     fclose(head_file);
     return 0;
-}
-void read_variable_string(FILE *file_bin,char *string_var){
-    int i = 0;
-    while(1){
-        string_var[i] = fgetc(file_bin);
-        if(string_var[i] == '|')
-            break;
-        i++;
-    }
-    string_var[i] = '\0';
-}
-
-int read_bin_rnn(FILE* file, int rnn, Route *route){
-    clear_route(route);
-    fseek(file,19,SEEK_SET);
-    fseek(file,rnn*TAM_REGISTRO,SEEK_CUR);
-    if(fgetc(file) == EOF)
-        return -1;
-    fseek(file,-1,SEEK_CUR);
-    fread(route->estadoOrigem,2*sizeof(char),1,file);
-    //printf("%s\n",route->estadoOrigem);
-    fread(route->estadoDestino,2*sizeof(char),1,file);
-    //printf("%s\n",route->estadoDestino);
-    fread(&(route->distancia),sizeof(int),1,file);
-    //printf("%d\n",route-> distancia);
-    read_variable_string(file,route->cidadeOrigem);
-    //printf("aaaaa");
-    read_variable_string(file,route->cidadeDestino);
-    read_variable_string(file,route->tempoViagem);
-    return 1;
 }
 
 int recover_data(FILE* file){
@@ -369,74 +378,80 @@ int remove_rrn(FILE *file, int rrn){
     fwrite("*",sizeof(char),1,file);
     return 0;
 }
+
+int verify_file(FILE *file){
+    if(file == NULL)
+        return 0;
+    Header head;
+    read_header(file,&head);
+    if(head.status == 0)
+        return 0;
+    else
+        return 1;
+
+}
+
 int remove_register(char *file_name){
     FILE* file = open_file(file_name,"rb+");
-    if(file == NULL){
+    if(!verify_file(file)){
         printf("Falha no processamento do arquivo.");
-        return -1;
+        return 0;
     }
     int num_reg;
     int distance;
     scanf("%d",&num_reg);
-    for(int i =0; i< num_reg; i++){
-        //fflush(stdin);
+    for(int i =0; i< num_reg; i++) {
         int j = 0;
-        int flag = 0;
         char field_name[15];
         char field_value[40];
+        limpa_string(field_name,15);
+        limpa_string(field_value,40);
         Route route;
         clear_route(&route);
-        scanf("%s",field_name);
+        scanf("%s", field_name);
         scan_quote_string(field_value);
+        if (!strcmp(field_value, "NULO"))
+            strcpy(field_value, "");
         int field_type = dictionary_field(field_name);
-        if(field_type == 3)
-            distance = atoi(field_value);
-        while(read_bin_rnn(file,j,&route) != -1){
-            switch(field_type){
-                case 1:
+        if (field_type == 3) {
+            if (!strcmp(field_value, ""))
+                distance = 0;
+            else
+                distance = atoi(field_value);
+        }
+        while (read_bin_rnn(file, j, &route) != -1) {
+            if (route.estadoOrigem[0] != '*') {
+                switch (field_type) {
+                    case 1:
+                        if (!strcmp(field_value, route.estadoOrigem))
+                            remove_rrn(file, j);
+                        break;
+                    case 2:
+                        if (!strcmp(field_value, route.estadoDestino))
+                            remove_rrn(file, j);
+                        break;
+                    case 3:
+                        if (distance == route.distancia)
+                            remove_rrn(file, j);
+                        break;
+                    case 4:
+                        if (!strcmp(field_value, route.cidadeOrigem))
+                            remove_rrn(file, j);
+                        break;
+                    case 5:
+                        if (!strcmp(field_value, route.cidadeDestino))
+                            remove_rrn(file, j);
+                        break;
+                    case 6:
+                        if (!strcmp(field_value, route.tempoViagem))
+                            remove_rrn(file, j);
+                        break;
+                }
 
-                    if(!strcmp(field_value,route.estadoOrigem)){
-                        remove_rrn(file,j);
-                        flag++;
-                    }
-                    break;
-                case 2:
-                    if(!strcmp(field_value,route.estadoDestino)){
-                        remove_rrn(file,j);
-                        flag++;
-                    }
-                    break;
-                case 3:
-                    if(distance == route.distancia){
-                        remove_rrn(file,j);
-                        flag++;
-                    }
-                    break;
-                case 4:
-                    if(!strcmp(field_value,route.cidadeOrigem)){
-                        remove_rrn(file,j);
-                        flag++;
-                    }
-                    break;
-                case 5:
-                    if(!strcmp(field_value,route.cidadeDestino)){
-                        remove_rrn(file,j);
-                        flag++;
-                    }
-                    break;
-                case 6:
-                    if(!strcmp(field_value,route.tempoViagem)){
-                        remove_rrn(file,j);
-                        flag++;
-                    }
-                    break;
             }
             j++;
         }
-        if(!flag) {
-            printf("Registro inexistente.");
-            return -1;
-        }
+
     }
     return 0;
 }
@@ -499,7 +514,7 @@ void insert_regs(char* fileName, int n){
 
 int atualiza_campo_rrn(char *fileName, int n){
     FILE *file = open_file(fileName, "rb+");
-    int i, tipo, read;
+    int i, tipo;
     int rrn;
     char tipoCampo[15];
     char novoCampo[40];
@@ -576,6 +591,7 @@ int atualiza_campo_rrn(char *fileName, int n){
         write_register(file, reg, 0);
     }
     close_file(file);
+    return 1;
 }
 
 int main(){
