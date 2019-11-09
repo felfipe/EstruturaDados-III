@@ -66,6 +66,7 @@ void limpa_header(Header *head){
 /***************** FUNÇÕES DE ESCRITA **********************************/
 
 int write_header(Header head, FILE *file){
+    head.status = '1';
     fseek(file,0,SEEK_SET);
     fwrite(&(head.status),sizeof(char),1,file);
     fwrite(&(head.numero_vertices),sizeof(int),1,file);
@@ -134,15 +135,6 @@ void read_header(FILE *file, Header *head){
     fread(head->data_ultima_compactacao,10*sizeof(char),1,file);
 }
 
-int make_header(Header *head, FILE *file){
-    Route route;
-    int j = 0;
-    while(read_bin_rnn(file,j,&route) != -1){
-
-    }
-    return 1;
-}
-
 /******************** FUNÇÕES AUXILIARES *************************/
 int query_city_file(FILE* cities, char *city){
     char query[40];
@@ -156,6 +148,20 @@ int query_city_file(FILE* cities, char *city){
     fwrite(city,40*sizeof(char),1,cities);
     return 1;
 }
+
+int make_header(Header *head, FILE *file){
+    Route route;
+    int j = 0;
+    while(read_bin_rnn(file,j,&route) != -1){
+        head->numero_arestas++;
+        if(query_city_file(file,route.cidadeOrigem))
+            head->numero_vertices++;
+        if(query_city_file(file,route.cidadeDestino))
+            head->numero_vertices++;
+    }
+    return 1;
+}
+
 void get_current_date(char *date){
     time_t now;
     time(&now);
@@ -173,6 +179,7 @@ void get_current_date(char *date){
 
     sprintf(date,"%s/%s/%4d",dia,mes,local->tm_year+1900);
 }
+
 
 int dictionary_field(char *field_name){
     char dictionary[6][15] = {"estadoOrigem","estadoDestino","distancia","cidadeOrigem","cidadeDestino","tempoViagem"};
@@ -423,8 +430,8 @@ int remove_record(char *file_name){
             }
             j++;
         }
-
     }
+    make_header();
     return 0;
 }
 
