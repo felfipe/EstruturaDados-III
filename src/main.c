@@ -7,7 +7,7 @@
 #define TAM_REGISTRO 85
 #define TAM_ESTADO 2
 
-
+/*********************** STRUCTS *****************************/
 typedef struct{
     char estadoOrigem[3];
     char estadoDestino[3];
@@ -25,22 +25,23 @@ typedef struct{
     char data_ultima_compactacao[11];
 } Header;
 
-FILE *open_file(char* file_name, char* mode){
+FILE *open_file_bin(char* file_name, char* mode, int message){
     FILE *file;
     file = fopen(file_name,mode);
-    if(file != NULL)
-        return file;
-    return NULL;
-}
-
-int close_file(FILE* file){
-    if(file != NULL){
-        fclose(file);
-        return 1;
+    if(file == NULL || getc(file) == '0'){
+        if(message == 1) {
+            printf("Falha no processamento do arquivo.");
+        }
+        if(message == 2){
+            printf("Falha no carregamento do arquivo.");
+        }
+        exit(0);
     }
-    return -1;
-
+    fseek(file,0,SEEK_CUR);
+    return file;
 }
+
+/******************** FUNÇÕES DE LIMPESA ********************************************/
 
 void limpa_string(char* string, int tam){
     for(int i =0; i< tam;i++)
@@ -61,6 +62,9 @@ void limpa_header(Header *head){
     head->numero_vertices = 0;
     head->status = '0';
 }
+
+/***************** FUNÇÕES DE ESCRITA **********************************/
+
 int write_header(Header head, FILE *file){
     fseek(file,0,SEEK_SET);
     fwrite(&(head.status),sizeof(char),1,file);
@@ -70,6 +74,25 @@ int write_header(Header head, FILE *file){
     return 0;
 }
 
+int write_register(FILE* file, Route reg, int j){
+    fwrite(reg.estadoOrigem,TAM_ESTADO*sizeof(char),1,file);
+    fwrite(reg.estadoDestino,TAM_ESTADO*sizeof(char),1,file);
+    fwrite(&(reg.distancia),sizeof(int),1,file);
+    fwrite(reg.cidadeOrigem,strlen(reg.cidadeOrigem)*sizeof(char),1,file);
+    fwrite("|",sizeof(char),1,file);
+    fwrite(reg.cidadeDestino,strlen(reg.cidadeDestino)*sizeof(char),1,file);
+    fwrite("|",sizeof(char),1,file);
+    fwrite(reg.tempoViagem,strlen(reg.tempoViagem)*sizeof(char),1,file);
+    fwrite("|",sizeof(char),1,file);
+    int size = TAM_REGISTRO - 2*TAM_ESTADO - sizeof(int) - strlen(reg.cidadeOrigem) - strlen(reg.cidadeDestino) - strlen(reg.tempoViagem) - 3;
+    if (j){
+        for(int i = 0; i < size; i++)
+            fwrite("#",sizeof(char),1,file);
+    }
+    return 1;
+}
+
+/**************** FUNÇÕES DE LEITURA ********************************/
 void read_variable_string(FILE *file_bin,char *string_var){
     int i = 0;
     while(1){
@@ -103,6 +126,14 @@ int read_bin_rnn(FILE* file, int rnn, Route *route){
     return 1;
 }
 
+void read_header(FILE *file, Header *head){
+    fseek(file,0,SEEK_SET);
+    fread(&(head->status),sizeof(char),1,file);
+    fread(&(head->numero_vertices),sizeof(int),1,file);
+    fread(&(head->numero_arestas),sizeof(int),1,file);
+    fread(head->data_ultima_compactacao,10*sizeof(char),1,file);
+}
+
 int make_header(Header *head, FILE *file){
     Route route;
     int j = 0;
@@ -112,23 +143,7 @@ int make_header(Header *head, FILE *file){
     return 1;
 }
 
-int write_register(FILE* file, Route reg, int j){
-	fwrite(reg.estadoOrigem,TAM_ESTADO*sizeof(char),1,file);
-	fwrite(reg.estadoDestino,TAM_ESTADO*sizeof(char),1,file);
-	fwrite(&(reg.distancia),sizeof(int),1,file);
-	fwrite(reg.cidadeOrigem,strlen(reg.cidadeOrigem)*sizeof(char),1,file);
-	fwrite("|",sizeof(char),1,file);
-	fwrite(reg.cidadeDestino,strlen(reg.cidadeDestino)*sizeof(char),1,file);
-	fwrite("|",sizeof(char),1,file);
-	fwrite(reg.tempoViagem,strlen(reg.tempoViagem)*sizeof(char),1,file);
-	fwrite("|",sizeof(char),1,file);
-	int size = TAM_REGISTRO - 2*TAM_ESTADO - sizeof(int) - strlen(reg.cidadeOrigem) - strlen(reg.cidadeDestino) - strlen(reg.tempoViagem) - 3;
-	if (j){
-		for(int i = 0; i < size; i++)
-			fwrite("#",sizeof(char),1,file);
-	}
-	return 0;
-}
+/******************** FUNÇÕES AUXILIARES *************************/
 int query_city_file(FILE* cities, char *city){
     char query[40];
     fseek(cities,0,SEEK_SET);
@@ -158,6 +173,27 @@ void get_current_date(char *date){
 
     sprintf(date,"%s/%s/%4d",dia,mes,local->tm_year+1900);
 }
+
+int dictionary_field(char *field_name){
+    char dictionary[6][15] = {"estadoOrigem","estadoDestino","distancia","cidadeOrigem","cidadeDestino","tempoViagem"};
+    for(int i = 0; i <6;i++){
+        if(!strcmp(field_name,dictionary[i]))
+            return i+1;
+    }
+    return -1;
+}
+
+int remove_rrn(FILE *file, int rrn){
+    fseek(file,19,SEEK_SET);
+    fseek(file,rrn*TAM_REGISTRO,SEEK_CUR);
+    if(fgetc(file) == EOF)
+        return -1;
+    fseek(file,-1,SEEK_CUR);
+    fwrite("*",sizeof(char),1,file);
+    return 0;
+}
+
+/************************** FUNÇÃO 1 ****************************/
 int read_csv(char* csv_name, char* bin_name){
     FILE *csv_file = fopen(csv_name,"rb+");
     FILE *bin_file = fopen(bin_name,"wb");
@@ -214,19 +250,11 @@ int read_csv(char* csv_name, char* bin_name){
     fclose(bin_file);
     fclose(csv_file);
     fclose(head_file);
-    return 0;
+    return 1;
 }
 
+/***************** FUNÇÃO 2 ***********************/
 int recover_data(FILE* file){
-    if(file == NULL){
-        printf("Falha no processamento do arquivo.");
-        return -1;
-    }
-
-    if(fgetc(file) == '0'){
-        printf("Falha no processamento do arquivo.");
-        return -1;
-    }
     int i = 0;
     int cont = 0;
     Route route;
@@ -241,17 +269,11 @@ int recover_data(FILE* file){
     }
     if(cont == 0)
         printf("Registro inexistente.");
-    close_file(file);
+    fclose(file);
     return 0;
 }
-int dictionary_field(char *field_name){
-    char dictionary[6][15] = {"estadoOrigem","estadoDestino","distancia","cidadeOrigem","cidadeDestino","tempoViagem"};
-    for(int i = 0; i <6;i++){
-        if(!strcmp(field_name,dictionary[i]))
-            return i+1;
-    }
-    return -1;
-}
+
+/************************* FUNÇÃO 3 ******************************/
 void recover_search(FILE* file){
     char nome_campo[15]; // nome do tipo do campo do que se busca
     char wntd_data[40]; // conteudo a se buscar
@@ -329,6 +351,7 @@ void recover_search(FILE* file){
     fclose(file);
 }
 
+/******************************* FUNÇÃO 4 *******************************/
 void recover_rrn(FILE* file){
     Route route;
     clear_route(&route);
@@ -342,61 +365,10 @@ void recover_rrn(FILE* file){
     }
     fclose(file);
 }
-void read_header(FILE *file, Header *head){
-    fseek(file,0,SEEK_SET);
-    fread(&(head->status),sizeof(char),1,file);
-    fread(&(head->numero_vertices),sizeof(int),1,file);
-    fread(&(head->numero_arestas),sizeof(int),1,file);
-    fread(head->data_ultima_compactacao,10*sizeof(char),1,file);
-}
-int compact_file(char *file_name, char* compacted_file_name){
-    FILE * file = open_file(file_name,"rb");
-    FILE * compacted_file = open_file(compacted_file_name,"w");
-    int rrn = 0;
-    Route route;
-    Header head;
-    clear_route(&route);
-    read_header(file,&head);
-    get_current_date(head.data_ultima_compactacao);
-    write_header(head,compacted_file);
-    while(read_bin_rnn(file,rrn,&route) != -1){
-        if(route.estadoOrigem[0] != '*'){
-            write_register(compacted_file,route,1);
-        }
-        rrn++;
-    }
-    fclose(file);
-    fclose(compacted_file);
-    return 0;
-}
-int remove_rrn(FILE *file, int rrn){
-    fseek(file,19,SEEK_SET);
-    fseek(file,rrn*TAM_REGISTRO,SEEK_CUR);
-    if(fgetc(file) == EOF)
-        return -1;
-    fseek(file,-1,SEEK_CUR);
-    fwrite("*",sizeof(char),1,file);
-    return 0;
-}
 
-int verify_file(FILE *file){
-    if(file == NULL)
-        return 0;
-    Header head;
-    read_header(file,&head);
-    if(head.status == 0)
-        return 0;
-    else
-        return 1;
-
-}
-
-int remove_register(char *file_name){
-    FILE* file = open_file(file_name,"rb+");
-    if(!verify_file(file)){
-        printf("Falha no processamento do arquivo.");
-        return 0;
-    }
+/********************** FUNÇÃO 5 ************************/
+int remove_record(char *file_name){
+    FILE* file = open_file_bin(file_name, "rb+",1);
     int num_reg;
     int distance;
     scanf("%d",&num_reg);
@@ -456,11 +428,12 @@ int remove_register(char *file_name){
     return 0;
 }
 
+/************************* FUNÇÃO 6 ****************************/
 void insert_regs(char* fileName, int n){
     int i=0;
     char aux[40];
     Route route;
-    FILE* file = open_file(fileName, "rb+");
+    FILE* file = open_file_bin(fileName, "rb+",1);
 
     fseek(file,19,SEEK_SET);
 
@@ -509,11 +482,12 @@ void insert_regs(char* fileName, int n){
         }
         write_register(file, route,1);
     }
-    close_file(file);
+    fclose(file);
 }
 
-int atualiza_campo_rrn(char *fileName, int n){
-    FILE *file = open_file(fileName, "rb+");
+/******************** FUNÇÃO 7 *****************************/
+int update_field_rrn(char *fileName, int n){
+    FILE *file = open_file_bin(fileName, "rb+",1);
     int i, tipo;
     int rrn;
     char tipoCampo[15];
@@ -590,8 +564,30 @@ int atualiza_campo_rrn(char *fileName, int n){
         fseek(file,rrn*TAM_REGISTRO,SEEK_CUR);
         write_register(file, reg, 0);
     }
-    close_file(file);
+    fclose(file);
     return 1;
+}
+
+/******************* FUNÇÃO 8 ************************/
+int compact_file(char *file_name, char* compacted_file_name){
+    FILE * file = open_file_bin(file_name, "rb",2);
+    FILE * compacted_file = fopen(compacted_file_name, "w");
+    int rrn = 0;
+    Route route;
+    Header head;
+    clear_route(&route);
+    read_header(file,&head);
+    get_current_date(head.data_ultima_compactacao);
+    write_header(head,compacted_file);
+    while(read_bin_rnn(file,rrn,&route) != -1){
+        if(route.estadoOrigem[0] != '*'){
+            write_register(compacted_file,route,1);
+        }
+        rrn++;
+    }
+    fclose(file);
+    fclose(compacted_file);
+    return 0;
 }
 
 int main(){
@@ -612,22 +608,22 @@ int main(){
             break;
         case '2':		// RECUPERAÇÃO DE TODOS OS REGISTROS
             scanf("%s", fileNameBin);
-            recover_data(open_file(fileNameBin,"rb"));
+            recover_data(open_file_bin(fileNameBin, "rb",1));
 
             break;
         case '3':		// RECUPERAÇÃO POR BUSCA
             scanf("%s", fileNameBin);
-            recover_search(open_file(fileNameBin,"rb"));
+            recover_search(open_file_bin(fileNameBin, "rb",1));
 
             break;
         case '4':		// RECUPERAÇÃO DE REGISTROS POR RRN
             scanf("%s", fileNameBin);
-            recover_rrn(open_file(fileNameBin,"rb"));
+            recover_rrn(open_file_bin(fileNameBin, "rb",1));
 
             break;
         case '5':		// REMOÇÃO DE REGISTROS
             scanf("%s", fileNameBin);
-            if(remove_register(fileNameBin) != -1)
+            if(remove_record(fileNameBin) != -1)
                 binarioNaTela1(fileNameBin);
 
             break;
@@ -640,7 +636,7 @@ int main(){
 
         case '7':		// ATUALIZAÇÃO DE REGISTRO POR RRN
             scanf("%s %d", fileNameBin, &n);
-            atualiza_campo_rrn(fileNameBin, n);
+            update_field_rrn(fileNameBin, n);
             binarioNaTela1(fileNameBin);
             break;
 
