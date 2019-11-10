@@ -17,7 +17,7 @@ typedef struct{
     char tempoViagem[10];
 } Route;
 
-// Estrutura de cabeçario com 19 bytes
+// Estrutura de cabeçalho com 19 bytes
 typedef struct{
     char status;
     int numero_vertices;
@@ -41,7 +41,7 @@ FILE *open_file_bin(char* file_name, char* mode, int message){
     return file;
 }
 
-/******************** FUNÇÕES DE LIMPESA ********************************************/
+/******************** FUNÇÕES DE LIMPEZA ********************************************/
 
 void limpa_string(char* string, int tam){
     for(int i =0; i< tam;i++)
@@ -109,17 +109,14 @@ int read_bin_rnn(FILE* file, int rnn, Route *route){
     clear_route(route);
     fseek(file,19,SEEK_SET);
     fseek(file,rnn*TAM_REGISTRO,SEEK_CUR);
-    if(fgetc(file) == EOF)
+    if(fgetc(file) == EOF){
         return -1;
+    }
     fseek(file,-1,SEEK_CUR);
     fread(route->estadoOrigem,2*sizeof(char),1,file);
-    //printf("%s\n",route->estadoOrigem);
     fread(route->estadoDestino,2*sizeof(char),1,file);
-    //printf("%s\n",route->estadoDestino);
     fread(&(route->distancia),sizeof(int),1,file);
-    //printf("%d\n",route-> distancia);
     read_variable_string(file,route->cidadeOrigem);
-    //printf("aaaaa");
     read_variable_string(file,route->cidadeDestino);
     read_variable_string(file,route->tempoViagem);
     if(route->estadoOrigem[0] == '*')
@@ -152,12 +149,21 @@ int query_city_file(FILE* cities, char *city){
 int make_header(Header *head, FILE *file){
     Route route;
     int j = 0;
+    strcpy(head->data_ultima_compactacao, "##########");
+    head->status = '1';
+    FILE *cities = fopen("temp","wb+");
+    if(cities == NULL)
+        return -1;
     while(read_bin_rnn(file,j,&route) != -1){
-        head->numero_arestas++;
-        if(query_city_file(file,route.cidadeOrigem))
-            head->numero_vertices++;
-        if(query_city_file(file,route.cidadeDestino))
-            head->numero_vertices++;
+        if(route.estadoOrigem[0] != '*'){
+            head->numero_arestas++;
+            if(query_city_file(cities,route.cidadeOrigem))
+                head->numero_vertices++;
+            if(query_city_file(cities,route.cidadeDestino))
+                head->numero_vertices++;
+            
+        }
+        j++;
     }
     return 1;
 }
@@ -203,7 +209,7 @@ int remove_rrn(FILE *file, int rrn){
 /************************** FUNÇÃO 1 ****************************/
 int read_csv(char* csv_name, char* bin_name){
     FILE *csv_file = fopen(csv_name,"rb+");
-    FILE *bin_file = fopen(bin_name,"wb");
+    FILE *bin_file = fopen(bin_name,"wb+");
     FILE *head_file = fopen("head.bin","wb+");
     if(csv_file == NULL || bin_file == NULL || head_file == NULL){
         printf("Falha no carregamento do arquivo.");
@@ -380,6 +386,7 @@ int remove_record(char *file_name){
     int distance;
     scanf("%d",&num_reg);
     for(int i =0; i< num_reg; i++) {
+        fflush(stdin);
         int j = 0;
         char field_name[15];
         char field_value[40];
@@ -431,7 +438,11 @@ int remove_record(char *file_name){
             j++;
         }
     }
-    make_header();
+    Header head;
+    limpa_header(&head);
+    make_header(&head, file);
+    write_header(head, file);
+    fclose(file);
     return 0;
 }
 
@@ -489,6 +500,10 @@ void insert_regs(char* fileName, int n){
         }
         write_register(file, route,1);
     }
+    Header head;
+    limpa_header(&head);
+    make_header(&head, file);
+    write_header(head, file);
     fclose(file);
 }
 
@@ -501,7 +516,6 @@ int update_field_rrn(char *fileName, int n){
     char novoCampo[40];
     Route reg;
     clear_route(&reg);
-
     for(i=0; i<n; i++){
         scanf ("%d %s", &rrn, tipoCampo);
         scan_quote_string(novoCampo);
@@ -510,13 +524,12 @@ int update_field_rrn(char *fileName, int n){
 
         tipo = dictionary_field(tipoCampo);
         if(read_bin_rnn(file, rrn, &reg) == -1){
-            printf("Falha no processamento do arquivo.");
-            return -1;
+            continue;
         }
         switch (tipo)
         {
             case 1:
-                if(!strcmp(novoCampo, "NULO")){
+                if(strcmp(novoCampo, "NULO")){
                     strcpy(reg.estadoOrigem, novoCampo);
                 }else{
                     limpa_string(reg.estadoOrigem,3);
@@ -524,7 +537,7 @@ int update_field_rrn(char *fileName, int n){
                 break;
 
             case 2:
-                if(!strcmp(novoCampo, "NULO")){
+                if(strcmp(novoCampo, "NULO")){
                     strcpy(reg.estadoDestino, novoCampo);
                 }else{
                     limpa_string(reg.estadoDestino,3);
@@ -532,7 +545,7 @@ int update_field_rrn(char *fileName, int n){
                 break;
 
             case 3:
-                if(!strcmp(novoCampo, "NULO")){
+                if(strcmp(novoCampo, "NULO")){
                     reg.distancia=atoi(novoCampo);
                 }else{
                     reg.distancia=0;
@@ -540,7 +553,7 @@ int update_field_rrn(char *fileName, int n){
                 break;
 
             case 4:
-                if (!strcmp(novoCampo, "NULO")){
+                if (strcmp(novoCampo, "NULO")){
                     strcpy(reg.cidadeOrigem, novoCampo);
                 }else{
                     limpa_string(reg.cidadeOrigem,40);
@@ -548,7 +561,7 @@ int update_field_rrn(char *fileName, int n){
                 break;
 
             case 5:
-                if (!strcmp(novoCampo, "NULO")){
+                if (strcmp(novoCampo, "NULO")){
                     strcpy(reg.cidadeDestino, novoCampo);
                 }else{
                     limpa_string(reg.cidadeDestino,40);
@@ -556,32 +569,33 @@ int update_field_rrn(char *fileName, int n){
                 break;
 
             case 6:
-                if (!strcmp(novoCampo, "NULO")){
+                if (strcmp(novoCampo, "NULO")){
                     strcpy(reg.tempoViagem, novoCampo);
                 }else{
                     limpa_string(reg.tempoViagem, 10);
                 }
-                break;
-
-            default:
-                printf("Falha no processamento do arquivo.");
                 break;
         }
         fseek(file,19,SEEK_SET);
         fseek(file,rrn*TAM_REGISTRO,SEEK_CUR);
         write_register(file, reg, 0);
     }
+    Header head;
+    limpa_header(&head);
+    make_header(&head, file);
+    write_header(head, file);
     fclose(file);
     return 1;
 }
 
 /******************* FUNÇÃO 8 ************************/
 int compact_file(char *file_name, char* compacted_file_name){
-    FILE * file = open_file_bin(file_name, "rb",2);
-    FILE * compacted_file = fopen(compacted_file_name, "w");
+    FILE * file = open_file_bin(file_name, "rb+",2);
+    FILE * compacted_file = fopen(compacted_file_name, "wb+");
     int rrn = 0;
     Route route;
     Header head;
+    limpa_header(&head);
     clear_route(&route);
     read_header(file,&head);
     get_current_date(head.data_ultima_compactacao);
@@ -648,8 +662,10 @@ int main(){
             break;
 
         case '8':		// COMPACTAÇÃO DO ARQUIVO
+            scanf("%s", fileNameBin);
             scanf("%s", compacted_file_name);
             compact_file(fileNameBin,compacted_file_name);
+            binarioNaTela1(compacted_file_name);
             break;
 
 
