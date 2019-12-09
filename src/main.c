@@ -11,6 +11,7 @@
 #include<stdlib.h>
 #include<string.h>
 #include<time.h>
+#include <limits.h>
 
 #define TAM_REGISTRO 85 // Define para o tamanho do registro
 #define TAM_ESTADO 2 // Tamanho fixo da string estado
@@ -185,28 +186,19 @@ void limpa_aresta(Aresta *aresta){
     strcpy(aresta->tempoViagem,"");
 }
 
-
-/***************** FUNÇÃO 2 ***********************/
-
-// Printa na tela os registro de um arquivo bin
-int recover_data(FILE* file){
-    int i = 0;
-    int cont = 0;
-    Route route;
-    clear_route(&route);
-    while(read_bin_rnn(file,i,&route) != -1){ // Lê todos os registros
-        if(route.estadoOrigem[0] != '*'){
-            printf("%d %s %s %d %s %s %s \n",i,route.estadoOrigem,route.estadoDestino,route.distancia,route.cidadeOrigem,
-                   route.cidadeDestino,route.tempoViagem);
-            cont++;
+void printa_grafo(Vertice *cidade, int tam){
+    for(int i = 0; i < tam; i++){ // percorre todo vetor de vértices
+        printf("%s %s ",cidade[i].cidade, cidade[i].estado);
+        for(Aresta *no = cidade[i].aresta; no != NULL; no = no->prox){ // percorre toda lista de cada vértice
+            if(strcmp("",no->tempoViagem) == 0)
+                printf("%s %s %d ", no->destino->cidade,no->destino->estado,no->distancia);
+            else
+                printf("%s %s %d %s ", no->destino->cidade,no->destino->estado,no->distancia,no->tempoViagem);
         }
-        i++;
+        printf("\n");
     }
-    if(cont == 0) // Se o arquivo estiver vazio
-        printf("Registro inexistente.");
-    fclose(file);
-    return 0;
 }
+
 /*
 Insere ordenadamente no vetor de Vértices
 */
@@ -227,6 +219,44 @@ int insere_vetor_ordenado(Vertice* cidades, int tam, char* cidade, char* estado)
     strcpy(cidades[j].estado,estado);
     return 1;
 }
+
+void quickSort(Vertice *aux, int inicio, int fim){
+    
+    int i, j;
+    Vertice y;
+
+    i = inicio;
+    j = fim;
+
+    int tam = strlen(aux[(inicio + fim) / 2].cidade);
+
+    char x[tam+1];
+    strcpy(x, aux[(inicio + fim) / 2].cidade);
+     
+    while(i <= j) {
+        while(strcmp(aux[i].cidade,  x) < 0 && i < fim) {
+            i++;
+        }
+        while(strcmp(aux[j].cidade, x) > 0 && j > inicio) {
+            j--;
+        }
+        if(i <= j) {
+            y = aux[i];
+            aux[i] = aux[j];
+            aux[j] = y;
+            i++;
+            j--;
+        }
+    }
+     
+    if(j > inicio) {
+        quickSort(aux, inicio, j);
+    }
+    if(i < fim) {
+        quickSort(aux, i, fim);
+    }
+}
+
 /**************** FUNÇÃO 9 ********************/
 /*
 GERA UMA LISTA DE ADJACÊNCIA BIDIRECIONAL
@@ -281,7 +311,7 @@ int gera_lista(FILE* file, Vertice **cidade){
     return cont;
 }
 
-/**************** FUNÇÃO 10 ********************/
+/**************** FUNÇÃO 10 *******************
 void dijkstra(FILE* file){
     Vertice* cidadeRaiz, cidadeAux;
     char tipoCampo[15], valorCampo[40];
@@ -293,19 +323,79 @@ void dijkstra(FILE* file){
     
     
     
-}
-
-
-
+}*/
 
 
 
 /**************** FUNÇÃO 11 ********************/
 void prim(FILE *file){
-    Vertice vertice;
-    Vertice* conjunto_b;
-    Vertice* conjunto_n;
-    
+    Vertice* lista;
+    int num_vertices = gera_lista(file,&lista); // Gera o grafo a partir do arquivo
+    Vertice conjunto_b[num_vertices]; // Conjunto de vértices analizados
+    Vertice aux; //
+    Aresta aresta;
+    Vertice vertice_add;
+    int tam_conjunto_b=0;
+    int min = INT_MAX;
+    int indice_vertice;
+    char campo[40];
+    char vertice_inicial[40];
+
+    scanf("%s", campo);
+    scan_quote_string(vertice_inicial);
+
+    int i = 0;
+    for(i=0; i<num_vertices; i++){ // Procura o vértice inical e o adiciona no conjunto B
+        if(strcasecmp(lista[i].cidade,vertice_inicial) == 0){
+            strcpy(conjunto_b[0].cidade,lista[i].cidade);
+            strcpy(conjunto_b[0].estado,lista[i].estado);
+            conjunto_b->aresta = NULL;
+            break;
+        }
+    }
+    if(i == num_vertices){ // Caso a cidade não esteja no gráfico
+        printf("Cidade inexistente.");
+        exit(0);
+    }
+    tam_conjunto_b++;
+
+    while(tam_conjunto_b != num_vertices){ // Enquanto B != N
+        min = INT_MAX; // min = "infinito"
+        for(int cont_vetices = 0; cont_vetices < num_vertices; cont_vetices++){ // Para todos os vértices do grafo
+            for(int cont_conj_b = 0; cont_conj_b < tam_conjunto_b; cont_conj_b++){
+                if(strcasecmp(lista[cont_vetices].cidade,conjunto_b[cont_conj_b].cidade) == 0){ // Se o vértice estiver no conjunto B
+                    aux = lista[cont_vetices];
+
+                    while (aux.aresta != NULL){
+                        int esta_conj_N_B = 1;
+                        for(int j=0; j<tam_conjunto_b;j++){ // Verifica se está no conjunto N - B
+                            if(strcasecmp(aux.aresta->destino->cidade,conjunto_b[j].cidade) == 0) {
+                                esta_conj_N_B = 0;
+                                break;
+                            }
+                        }
+                        if(esta_conj_N_B){ // Está no conjunto N - B
+                            if(min > aux.aresta->distancia){ // Se min > custo da aresta
+                                min = aux.aresta->distancia;
+                                vertice_add = *aux.aresta->destino;
+                                vertice_add.aresta = NULL;
+                                indice_vertice = cont_conj_b;
+                                limpa_aresta(&aresta);
+                                aresta = *aux.aresta;
+                                aresta.prox = NULL;
+                            }
+                        }
+                        aux.aresta = aux.aresta->prox;
+                    }
+                }
+            }
+        }
+        insere_lista_ordenada(&(conjunto_b[indice_vertice].aresta),aresta);
+        conjunto_b[tam_conjunto_b] = vertice_add;
+        tam_conjunto_b++;
+    }
+    quickSort(conjunto_b,0,tam_conjunto_b-1);
+    printa_grafo(conjunto_b,tam_conjunto_b);
 }
 
 
@@ -316,34 +406,25 @@ int main(){
     FILE *file;
 
     scanf("%d", &funcao);
-    fflush(stdin);
+    //fflush(stdin);
     scanf("%s", fileNameBin);
     file = open_file_bin(fileNameBin,"rb");
     Vertice *cidade;
     int tam;
     switch(funcao){
         case 9:
-            tam = gera_lista(file,&cidade); // gera a lista 
-            for(int i = 0; i < tam; i++){ // percorre todo vetor de vértices
-                printf("%s %s ",cidade[i].cidade, cidade[i].estado);
-                for(Aresta *no = cidade[i].aresta; no != NULL; no = no->prox){ // percorre toda lista de cada vértice
-                    if(strcmp("",no->tempoViagem) == 0)
-                        printf("%s %s %d ", no->destino->cidade,no->destino->estado,no->distancia);
-                    else
-                        printf("%s %s %d %s ", no->destino->cidade,no->destino->estado,no->distancia,no->tempoViagem);
-                }
-                printf("\n");
-            }
+            tam = gera_lista(file,&cidade); // gera a lista
+            printa_grafo(cidade,tam);
             for(int i = 0; i < tam; i++)    // libera as listas de arestas
                 libera_lista(cidade[i].aresta);
             free(cidade); // libera o vetor de vértices
             break;
 
         case 10:
-            
             break;
 
         case 11:
+            prim(file);
             break;
     }
     return 0;
