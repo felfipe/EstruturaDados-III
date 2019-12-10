@@ -395,11 +395,10 @@ void dijkstra(FILE* file){
     for(i=0; i<nVertices; i++){
         if (ANT[i]!=-1){ //verifica se nao é o vertice origem
             printf("%s %s %s %s %d %s %s\n", verticeOrigem->cidade, verticeOrigem->estado, vetorCidades[i].cidade, 
-            vetorCidades[i].estado, D[i].menor_distancia, vetorCidades[ANT[i]].cidade, vetorCidades[ANT[i]].estado);
+            vetorCidades[i].estado, D[i].menor_distancia, vetorCidades[(ANT[i])].cidade, vetorCidades[(ANT[i])].estado);
         }
     }
     fclose(file);
-    return;
 }
 
 
