@@ -53,7 +53,7 @@ typedef struct{ // Estrutura para manipulação do header
 //estrutura usada no vetor de distancias no Dijkstra
 typedef struct{
     int menor_distancia; //menor distancia até o vertice origem
-    int status; //indicador se o vertice já foi totalmente analisado
+    int status; //indicador se o vertice já teve o menor caminho ate ele encontrado
 } m_distancias;
 
 
@@ -318,83 +318,89 @@ int gera_lista(FILE* file, Vertice **cidade){
 
 /**************** FUNÇÃO 10 ********************/
 void dijkstra(FILE* file){
-    Vertice verticeAux; //auxiliar
-    Vertice* vetorCidades; //ponteiro que se tornar um vetor de vertices
-    Vertice verticeOrigem; //ponteiro que recebera o endereco do vertice origem sugerido pelo usuario
-    char tipoCampo[15];
-    char valorCampo[40];
-    int nVertices;  //numero de vertices
-    nVertices = gera_lista(file, &vetorCidades);  
-    m_distancias D[nVertices]; //vetor de distâncias
-    int ANT[nVertices]; //vetor de antecessores, indicando-os pela sua posição na lista de vértices
-    int i, j;
-    int nao_achou = 1;
-    int indice;
-    int indiceProx;
-    int distancia_atual=0;
-    int distanciaAux;
-    int distanciaProx;
-    Aresta* arestaAux;
-    scanf("%s", tipoCampo);
-    if (strcmp(tipoCampo, "cidadeOrigem")){ //confere se o campo lido é o cidadeOrigem
+    Vertice verticeAux;            //auxiliar
+    Vertice* vetorCidades;         //ponteiro que se tornar um vetor de vertices
+    Vertice verticeOrigem;         //ponteiro que recebera o endereco do vertice origem sugerido pelo usuario
+    char tipoCampo[15];             
+    char valorCampo[40];            //cidade origem escolhida pelo usuario
+    int nVertices;                  //numero de vertices
+    nVertices = gera_lista(file, &vetorCidades);  //atribui o grafo a vetorCidades e retorna o numero de vertices
+    m_distancias D[nVertices];      //vetor de distâncias
+    int ANT[nVertices];             //vetor de antecessores, indicando-os pela sua posição na lista de vértices
+    int i, j;                       //contadores
+    int nao_achou = 1;              //indica que a cidade procurada ainda nao foi achada
+    int indice;                     //indice do vertice pronto para analise no loop da linha 364
+    int indiceProx;                 //indice do vertice que sera foco da proxima etapa de analise
+    int distancia_atual=0;          //menor distancia do vertice que foco da etapa de analise ao vertice origem
+    int distanciaAux;               //auxiliar para manipulacao de valor de distancia
+    int distanciaProx;          //menor distancia do vertice que sera foco da proxima etapa de analise ao vertice origem
+    Aresta* arestaAux;              //auxiliar de manipulacao de aresta
+    scanf("%s", tipoCampo);         
+    if (strcmp(tipoCampo, "cidadeOrigem")){     //confere se o campo lido é o cidadeOrigem
         printf("Falha na execução da funcionalidade.");
-        return;
+        return;                     //printa mensagem de erro e retorna para o main
     }
-    scan_quote_string(valorCampo); //le o nome da cidade que sera o Vertice Origem
-    for(i=0; i<nVertices; i++){
+    scan_quote_string(valorCampo);           //le o nome da cidade que sera o Vertice Origem
+    for(i=0; i<nVertices; i++){             //enquanto houverem vertices no vetorCidades:
         verticeAux = vetorCidades[i];
-        D[i].menor_distancia = -1; //preenche as distancias do vetor o com valor invalido -1
-        D[i].status = 0; //preenche os status do vetor com 0 (vertice nao totalmente verificado) 
-        ANT[i] = -1; //preenche o vetor de antecessores com -1
-        if (nao_achou && !strcmp(verticeAux.cidade, valorCampo))
-        {
-            nao_achou = 0; //indica que o vertice correspondente à cidadeOrigem lida foi encontrado
-            verticeOrigem = verticeAux;
-            D[i].menor_distancia = 0;
-            D[i].status = 1;
-            indice=i;
+        D[i].menor_distancia = -1;          //preenche as distancias do vetor o com valor invalido -1
+        D[i].status = 0;                    //preenche os status do vetor com 0 (menor caminho nao encontrado) 
+        ANT[i] = -1;                        //preenche o vetor de antecessores com -1
+        if (nao_achou && !strcmp(verticeAux.cidade, valorCampo)) //confere se a cidade procurada ja foi encontrada
+        {   //e, caso ainda nao, confere se o vertice analisado atualmente corresponde a tal cidade
+            nao_achou = 0;                  //indica que o vertice correspondente à cidadeOrigem lida foi encontrado
+            verticeOrigem = verticeAux;     //atribui o vertice em analise ao vertice origem
+            D[i].menor_distancia = 0;       //zera sua distancia em relacao a origem no vetor D 
+            D[i].status = 1;            //o vertice passa a ter o status 1 (menor caminho encontrado) no vetor D
+            indice=i;                   //atribui-se o o indice do vertice origem para ser analisado no proximo loop
         }
     }
-    if(nao_achou){
+    if(nao_achou){                         //confere se a cidade foi encontrada no loop anterior
         printf("Cidade inexistente.");
-        return;
+        return;                                //printa mensagem de erro e retorna para o main
     }
-    arestaAux=verticeOrigem.aresta;
+    arestaAux=verticeOrigem.aresta;         //atribui ao auxiliar a primeira aresta vinculada ao vertice origem
     j=0;
-    while(j<(nVertices-1)){
-        if(arestaAux!=NULL){
-            distanciaProx=-1;
+    while(j<(nVertices-1)){                  //enquanto nao sobrar apenas um vertice a ser analisado:
+        if(arestaAux!=NULL){                 //caso haja aresta nao analisada vinvulada ao vertice:
+            distanciaProx=-1;                //atribui valor invalido a distanciaProx
+            //soma da menor distancia ate o vertice atual com a distancia da aresta analisada
             distanciaAux=arestaAux->distancia+distancia_atual;
-            for (i = 0; i < nVertices; i++){
-                if (!D[i].status){
+
+            for (i = 0; i < nVertices; i++){ //para todos os vertices do grafo:
+                if (!D[i].status){          //confere se o vertice ja teve o menor caminho encontrado
+                    //confere se o vertice e destino da aresta analisada
                     if (!strcmp(vetorCidades[i].cidade, arestaAux->destino->cidade)){
+                        //confere se a distancia dessa aresta e a menor distancia valida a esse vertice ate agora
                         if(D[i].menor_distancia == -1 || distanciaAux<D[i].menor_distancia){
-                            ANT[i]=indice;
-                            D[i].menor_distancia=distanciaAux;
+                            ANT[i]=indice;          //o vertice de origem da aresta passa a a ser o antecessor desta cidade
+                            D[i].menor_distancia=distanciaAux;      //atualiza-se a menor distancia
                         }
                     }
-                    if (D[i].menor_distancia!= -1){
+                    if (D[i].menor_distancia!= -1){         //caso ja haja uma menor distancia a esse vertice
+                        //confere se e a menor distancia dentre os vertices de status 0 no vetor D
                         if (distanciaProx== -1 || D[i].menor_distancia < distanciaProx){
-                            distanciaProx=D[i].menor_distancia;
-                            indiceProx=i;
+                            distanciaProx=D[i].menor_distancia;   
+                            indiceProx=i;           //salva o indice do vertice e sua distancia
                             }
                     }
                 }
             }
-            arestaAux=arestaAux->prox;
-        }else{
+            arestaAux=arestaAux->prox;       //pula para a proxima aresta deste vertice
+        }else{                              //caso nao haja mais arestas vinculadas a este vertice
+            //pula para o vertice de menor distancia dentre os com status 0 no vetor D
             indice=indiceProx;
             distancia_atual=distanciaProx;
             arestaAux=vetorCidades[indice].aresta;
-            D[indice].status=1;
-            j++;
+            D[indice].status=1;            //vertice passa a ter status 1 no vetor D (menor caminho ja encontrado)
+            j++;                            //indica que um vertice foi totalmente analisado no loop
         }
     }
     for(i=0; i<nVertices; i++){
         if (ANT[i]!=-1){ //verifica se nao é o vertice origem
             printf("%s %s %s %s %d %s %s\n", verticeOrigem.cidade, verticeOrigem.estado, vetorCidades[i].cidade, 
             vetorCidades[i].estado, D[i].menor_distancia, vetorCidades[(ANT[i])].cidade, vetorCidades[(ANT[i])].estado);
-        }
+        }   //imprime os dados da linha (origem, destino, distancia e antecessor)
     }
 }
 
