@@ -398,7 +398,6 @@ void dijkstra(FILE* file){
             vetorCidades[i].estado, D[i].menor_distancia, vetorCidades[(ANT[i])].cidade, vetorCidades[(ANT[i])].estado);
         }
     }
-    fclose(file);
 }
 
 
