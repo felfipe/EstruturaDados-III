@@ -337,7 +337,7 @@ void dijkstra(FILE* file){
     Aresta* arestaAux;
 
     scanf("%s", tipoCampo);
-    if (!strcmp(tipoCampo, "cidadeOrigem")){ //confere se o campo lido é o cidadeOrigem
+    if (strcmp(tipoCampo, "cidadeOrigem")){ //confere se o campo lido é o cidadeOrigem
         printf("Falha na execução da funcionalidade.");
         return;
     }
@@ -501,6 +501,7 @@ int main(){
             break;
 
         case 10:
+            dijkstra(file);
             break;
 
         case 11:
