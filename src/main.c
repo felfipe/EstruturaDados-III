@@ -320,7 +320,7 @@ int gera_lista(FILE* file, Vertice **cidade){
 void dijkstra(FILE* file){
     Vertice verticeAux; //auxiliar
     Vertice* vetorCidades; //ponteiro que se tornar um vetor de vertices
-    Vertice* verticeOrigem; //ponteiro que recebera o endereco do vertice origem sugerido pelo usuario
+    Vertice verticeOrigem; //ponteiro que recebera o endereco do vertice origem sugerido pelo usuario
     char tipoCampo[15];
     char valorCampo[40];
     int nVertices;  //numero de vertices
@@ -335,7 +335,6 @@ void dijkstra(FILE* file){
     int distanciaAux;
     int distanciaProx;
     Aresta* arestaAux;
-
     scanf("%s", tipoCampo);
     if (strcmp(tipoCampo, "cidadeOrigem")){ //confere se o campo lido é o cidadeOrigem
         printf("Falha na execução da funcionalidade.");
@@ -350,7 +349,7 @@ void dijkstra(FILE* file){
         if (nao_achou && !strcmp(verticeAux.cidade, valorCampo))
         {
             nao_achou = 0; //indica que o vertice correspondente à cidadeOrigem lida foi encontrado
-            *verticeOrigem = verticeAux;
+            verticeOrigem = verticeAux;
             D[i].menor_distancia = 0;
             D[i].status = 1;
             indice=i;
@@ -360,8 +359,7 @@ void dijkstra(FILE* file){
         printf("Cidade inexistente.");
         return;
     }
-
-    arestaAux=verticeOrigem->aresta;
+    arestaAux=verticeOrigem.aresta;
     j=0;
     while(j<(nVertices-1)){
         if(arestaAux!=NULL){
@@ -394,7 +392,7 @@ void dijkstra(FILE* file){
     }
     for(i=0; i<nVertices; i++){
         if (ANT[i]!=-1){ //verifica se nao é o vertice origem
-            printf("%s %s %s %s %d %s %s\n", verticeOrigem->cidade, verticeOrigem->estado, vetorCidades[i].cidade, 
+            printf("%s %s %s %s %d %s %s\n", verticeOrigem.cidade, verticeOrigem.estado, vetorCidades[i].cidade, 
             vetorCidades[i].estado, D[i].menor_distancia, vetorCidades[(ANT[i])].cidade, vetorCidades[(ANT[i])].estado);
         }
     }
