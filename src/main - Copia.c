@@ -318,8 +318,8 @@ int gera_lista(FILE* file, Vertice **cidade){
 
 /**************** FUNÇÃO 10 ********************/
 void dijkstra(FILE* file){
-    Vertice verticeAux; //auxiliar
     Vertice* vetorCidades; //ponteiro que se tornar um vetor de vertices
+    Vertice* verticeAux; //auxiliar
     Vertice* verticeOrigem; //ponteiro que recebera o endereco do vertice origem sugerido pelo usuario
     char tipoCampo[15];
     char valorCampo[40];
@@ -343,14 +343,16 @@ void dijkstra(FILE* file){
     }
     scan_quote_string(valorCampo); //le o nome da cidade que sera o Vertice Origem
     for(i=0; i<nVertices; i++){
-        verticeAux = vetorCidades[i];
-        D[i].menor_distancia = -1; //preenche as distancias do vetor o com valor invalido -1
+        printf(".");
+        return;
+        *verticeAux = vetorCidades[i];
+        D[i].menor_distancia = __INT_MAX__; //preenche as distancias do vetor com o valor maximo
         D[i].status = 0; //preenche os status do vetor com 0 (vertice nao totalmente verificado) 
         ANT[i] = -1; //preenche o vetor de antecessores com -1
-        if (nao_achou && !strcmp(verticeAux.cidade, valorCampo))
+        if (nao_achou && !strcmp(verticeAux->cidade, valorCampo))
         {
             nao_achou = 0; //indica que o vertice correspondente à cidadeOrigem lida foi encontrado
-            *verticeOrigem = verticeAux;
+            verticeOrigem = verticeAux;
             D[i].menor_distancia = 0;
             D[i].status = 1;
             indice=i;
@@ -363,32 +365,29 @@ void dijkstra(FILE* file){
 
     arestaAux=verticeOrigem->aresta;
     j=0;
-    while(j<(nVertices-1)){
+    while(j<nVertices){
         if(arestaAux!=NULL){
-            distanciaProx=-1;
+            distanciaProx=__INT_MAX__;
             distanciaAux=arestaAux->distancia+distancia_atual;
             for (i = 0; i < nVertices; i++){
                 if (!D[i].status){
                     if (!strcmp(vetorCidades[i].cidade, arestaAux->destino->cidade)){
-                        if(D[i].menor_distancia == -1 || distanciaAux<D[i].menor_distancia){
+                        if(distanciaAux<D[i].menor_distancia){
                             ANT[i]=indice;
                             D[i].menor_distancia=distanciaAux;
                         }
                     }
-                    if (D[i].menor_distancia!= -1){
-                        if (distanciaProx== -1 || D[i].menor_distancia < distanciaProx){
-                            distanciaProx=D[i].menor_distancia;
-                            indiceProx=i;
-                            }
+                    if (D[i].menor_distancia < distanciaProx){
+                        distanciaProx=D[i].menor_distancia;
+                        indiceProx=i;
                     }
+                    
                 }
             }
-            arestaAux=arestaAux->prox;
         }else{
             indice=indiceProx;
             distancia_atual=distanciaProx;
             arestaAux=vetorCidades[indice].aresta;
-            D[indice].status=1;
             j++;
         }
     }
@@ -398,8 +397,6 @@ void dijkstra(FILE* file){
             vetorCidades[i].estado, D[i].menor_distancia, vetorCidades[ANT[i]].cidade, vetorCidades[ANT[i]].estado);
         }
     }
-    fclose(file);
-    return;
 }
 
 

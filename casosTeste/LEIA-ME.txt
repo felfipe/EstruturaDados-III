@@ -1,0 +1,12 @@
+
+
+	Aqui estão os casos de teste e arquivos binários disponíveis no run.codes.
+	Arquivos terminados em .in e .out são respectivamente a entrada e saída do programa.
+	Arquivos terminados em .bin são os binários. Você só vai conseguir "enxergar" o conteúdo deles usando alguma ferramenta, como o "hexdump" do Linux.
+
+	A ordem dos casos de teste é a mesma do run.codes, contudo alguns casos não estão disponíveis na plataforma ainda, e só serão inseridos para testes após a data de entrega.
+	Sendo assim, talvez a numeração não seja a mesma, apesar de manter a mesma ordem.
+	Exemplo: se aqui na pasta tem os arquivos caso01.in, caso01.out, caso02.in, caso02.out, caso04.in e caso04.out, eles se referem aos casos de teste 1, 2 e 3 do run.codes respectivamente.
+	Isso quer dizer que o verdadeiro caso03.in e caso03.out não está disponível até que a entrega no run.codes feche.
+
+
