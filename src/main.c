@@ -50,6 +50,12 @@ typedef struct{ // Estrutura para manipulação do header
     char data_ultima_compactacao[11]; // Data da última compactação
 } Header; // Nome da strutura
 
+//estrutura usada no vetor de distancias no Dijkstra
+typedef struct{
+    int menor_distancia; //menor distancia até o vertice origem
+    int status; //indicador se o vertice já foi totalmente analisado
+} m_distancias;
+
 
 /******************** FUNÇÕES AUXILIARES *************************/
 /*
@@ -310,19 +316,86 @@ int gera_lista(FILE* file, Vertice **cidade){
     return cont;
 }
 
-/**************** FUNÇÃO 10 *******************
+/**************** FUNÇÃO 10 ********************/
 void dijkstra(FILE* file){
-    Vertice* cidadeRaiz, cidadeAux;
-    char tipoCampo[15], valorCampo[40];
-    int nVertices; //numero de vertices
-    nVertices = gera_lista(file, &cidadeRaiz);
-    int D[nVertices]; 
-    int ANT[nVertices];
+    Vertice* vetorCidades; //ponteiro que se tornar um vetor de vertices
+    Vertice* verticeAux; //auxiliar
+    Vertice* verticeOrigem; //ponteiro que recebera o endereco do vertice origem sugerido pelo usuario
+    char tipoCampo[15];
+    char valorCampo[40];
+    int nVertices;  //numero de vertices
+    nVertices = gera_lista(file, &vetorCidades);  
+    m_distancias D[nVertices]; //vetor de distâncias
+    int ANT[nVertices]; //vetor de antecessores, indicando-os pela sua posição na lista de vértices
+    int i, j;
+    int nao_achou = 1;
+    int indice;
+    int indiceProx;
+    int distancia_atual=0;
+    int distanciaAux;
+    int distanciaProx;
+    Aresta* arestaAux;
 
-    
-    
-    
-}*/
+    scanf("%s", tipoCampo);
+    if (!strcmp(tipoCampo, "cidadeOrigem")){ //confere se o campo lido é o cidadeOrigem
+        printf("Falha na execução da funcionalidade.");
+        return;
+    }
+    scan_quote_string(valorCampo); //le o nome da cidade que sera o Vertice Origem
+    for(i=0; i<nVertices; i++){
+        *verticeAux = vetorCidades[i];
+        D[i].menor_distancia = __INT_MAX__; //preenche as distancias do vetor com o valor maximo
+        D[i].status = 0; //preenche os status do vetor com 0 (vertice nao totalmente verificado) 
+        ANT[i] = -1; //preenche o vetor de antecessores com -1
+        if (nao_achou && !strcmp(verticeAux->cidade, valorCampo))
+        {
+            nao_achou = 0; //indica que o vertice correspondente à cidadeOrigem lida foi encontrado
+            verticeOrigem = verticeAux;
+            D[i].menor_distancia = 0;
+            D[i].status = 1;
+            indice=i;
+        }
+    }
+    if(nao_achou){
+        printf("Cidade inexistente.");
+        return;
+    }
+
+    arestaAux=verticeOrigem->aresta;
+    j=0;
+    while(j<nVertices){
+        if(arestaAux!=NULL){
+            distanciaProx=__INT_MAX__;
+            distanciaAux=arestaAux->distancia+distancia_atual;
+            for (i = 0; i < nVertices; i++){
+                if (!D[i].status){
+                    if (!strcmp(vetorCidades[i].cidade, arestaAux->destino->cidade)){
+                        if(distanciaAux<D[i].menor_distancia){
+                            ANT[i]=indice;
+                            D[i].menor_distancia=distanciaAux;
+                        }
+                    }
+                    if (D[i].menor_distancia < distanciaProx){
+                        distanciaProx=D[i].menor_distancia;
+                        indiceProx=i;
+                    }
+                    
+                }
+            }
+        }else{
+            indice=indiceProx;
+            distancia_atual=distanciaProx;
+            arestaAux=vetorCidades[indice].aresta;
+            j++;
+        }
+    }
+    for(i=0; i<nVertices; i++){
+        if (ANT[i]!=-1){ //verifica se nao é o vertice origem
+            printf("%s %s %s %s %d %s %s\n", verticeOrigem->cidade, verticeOrigem->estado, vetorCidades[i].cidade, 
+            vetorCidades[i].estado, D[i].menor_distancia, vetorCidades[ANT[i]].cidade, vetorCidades[ANT[i]].estado);
+        }
+    }
+}
 
 
 
