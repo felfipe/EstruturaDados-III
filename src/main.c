@@ -359,7 +359,6 @@ void dijkstra(FILE* file){
         printf("Cidade inexistente.");
         return;
     }
-
     arestaAux=verticeOrigem.aresta;
     j=0;
     while(j<(nVertices-1)){
@@ -397,7 +396,6 @@ void dijkstra(FILE* file){
             vetorCidades[i].estado, D[i].menor_distancia, vetorCidades[(ANT[i])].cidade, vetorCidades[(ANT[i])].estado);
         }
     }
-    fclose(file);
 }
 
 
